@@ -9,8 +9,7 @@
     <style>
         :root {
             --primary: #000000;
-            --q-text: 1.5rem; /* Tamaño inicial pregunta */
-            --o-text: 1rem;   /* Tamaño inicial opciones */
+            --base-text: 18px; /* Tamaño base para preguntas */
         }
 
         body {
@@ -20,11 +19,9 @@
             overflow-x: hidden;
         }
 
-        /* Ajuste Dinámico de Texto */
-        .question-text { font-size: var(--q-text); transition: font-size 0.2s; }
-        .option-text { font-size: var(--o-text); transition: font-size 0.2s; }
+        /* El ajuste de letra solo afecta a estos elementos */
+        .dynamic-text { font-size: var(--base-text) !important; transition: font-size 0.2s ease; }
 
-        /* Fondo Interactivo */
         .bg-glow {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -47,27 +44,17 @@
             to { transform: translate(20%, 20%); }
         }
 
-        /* Splash Screen */
         #splash {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            position: fixed; inset: 0; background: #000; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.8s ease, visibility 0.8s;
         }
 
         .uni-logo {
-            font-weight: 900;
-            font-size: 3rem;
+            font-weight: 900; font-size: 3rem;
             background: linear-gradient(to right, #fbbf24, #0ea5e9, #10b981);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            letter-spacing: -2px;
+            background-clip: text; -webkit-background-clip: text;
+            color: transparent; letter-spacing: -2px;
         }
 
         .dark-glass {
@@ -82,81 +69,52 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .option-btn:hover {
-            background: rgba(60, 60, 60, 0.6);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateX(5px);
-        }
-
         .selected {
             background: #fff !important;
             color: #000 !important;
             border-color: #fff !important;
-            transform: scale(1.02);
             font-weight: bold;
         }
 
-        .config-panel {
-            background: #111;
-            border-left: 1px solid #333;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-        }
-
-        .img-box img {
-            max-width: 100%;
-            border-radius: 15px;
-            border: 1px solid #333;
-        }
-
+        .config-panel { background: #111; border-left: 1px solid #333; }
+        .img-box img { max-width: 100%; border-radius: 15px; border: 1px solid #333; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div class="bg-glow">
-        <div class="blob"></div>
-    </div>
+    <div class="bg-glow"><div class="blob"></div></div>
 
     <div id="splash">
-        <div class="animate-bounce mb-4">
-            <i class="fa-solid fa-graduation-cap text-6xl text-white"></i>
-        </div>
+        <div class="animate-bounce mb-4"><i class="fa-solid fa-graduation-cap text-6xl text-white"></i></div>
         <h1 class="uni-logo animate-pulse">UNAM • BUAP • UV</h1>
         <p class="text-gray-500 tracking-[0.5em] text-xs mt-4 uppercase">Simulador 2026</p>
     </div>
 
-    <button onclick="toggleConfig()" id="btnConfig" class="fixed top-6 right-6 z-50 text-gray-400 hover:text-white transition-transform hover:rotate-45">
+    <button onclick="toggleConfig()" class="fixed top-6 right-6 z-50 text-gray-400 hover:text-white hover:rotate-45 transition-all">
         <i class="fa-solid fa-ellipsis-vertical text-2xl"></i>
     </button>
 
     <div id="configMenu" class="hidden fixed inset-0 z-[60] flex justify-end">
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleConfig()"></div>
         <div class="config-panel w-80 h-full p-8 relative z-10 flex flex-col">
-            <div class="flex justify-between items-center mb-10">
-                <h3 class="text-xl font-black text-white">AJUSTES</h3>
-                <button onclick="toggleConfig()" class="text-gray-400"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-
+            <h3 class="text-xl font-black mb-10">AJUSTES</h3>
             <div class="space-y-8">
                 <div>
-                    <label class="text-xs text-gray-500 uppercase font-bold block mb-4">Tamaño de Fuente (Pregunta/Respuestas)</label>
+                    <label class="text-xs text-gray-500 uppercase font-bold block mb-4">Tamaño de Pregunta</label>
                     <div class="flex gap-2">
-                        <button onclick="adjustText(-1)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700 text-white">- A</button>
-                        <button onclick="adjustText(1)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700 text-white">+ A</button>
+                        <button onclick="adjustFont(-2)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700">- A</button>
+                        <button onclick="adjustFont(2)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700">+ A</button>
                     </div>
                 </div>
-
                 <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                    <p class="text-xs text-gray-500 mb-2 uppercase font-bold">Ayuda y Reportes</p>
-                    <a href="mailto:adrielserena7@gmail.com" class="flex items-center gap-3 text-blue-400 font-bold hover:text-blue-300">
+                    <p class="text-xs text-gray-500 mb-2 uppercase font-bold">Ayuda Técnica</p>
+                    <a href="mailto:adrielserena7@gmail.com" class="flex items-center gap-3 text-blue-400 font-bold">
                         <i class="fa-solid fa-envelope"></i> Soporte Adriel
                     </a>
                 </div>
             </div>
-
-            <div class="mt-auto text-[10px] text-gray-600 text-center uppercase tracking-widest font-bold">
-                PLATAFORMA ASG v3.0 • VERACRUZ
-            </div>
+            <div class="mt-auto text-[10px] text-gray-600 text-center uppercase tracking-widest">ASG v3.1 • 2026</div>
         </div>
     </div>
 
@@ -164,46 +122,32 @@
 
     <script>
         const SHEET_ID = '1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4';
-        let qSize = 1.5; 
-        let oSize = 1;
-
-        let state = {
-            database: { UNAM: {}, BUAP: {}, UV: {} },
-            view: 'home',
-            questions: [],
-            index: 0,
-            answers: {},
-            timeLeft: 0,
-            timer: null
-        };
+        let fontSize = 18;
+        let state = { database: { UNAM: {}, BUAP: {}, UV: {} }, view: 'home', questions: [], index: 0, answers: {}, timeLeft: 0, timer: null };
 
         window.addEventListener('load', () => {
             setTimeout(() => {
-                const splash = document.getElementById('splash');
-                splash.style.opacity = '0';
-                setTimeout(() => splash.classList.add('hidden'), 800);
+                const s = document.getElementById('splash');
+                s.style.opacity = '0';
+                setTimeout(() => s.classList.add('hidden'), 800);
             }, 2500);
-            loadData();
         });
 
         async function loadData() {
             try {
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:J`;
-                const res = await fetch(url);
+                const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:J`);
                 const txt = await res.text();
                 const json = JSON.parse(txt.substring(47).slice(0, -2));
-
                 json.table.rows.forEach(row => {
                     const uni = row.c[0]?.v?.toUpperCase();
                     const ver = row.c[1]?.v || '';
                     if (uni && state.database[uni]) {
                         if (!state.database[uni][ver]) state.database[uni][ver] = [];
                         state.database[uni][ver].push({
-                            s: row.c[2]?.v || '', // Materia
-                            q: row.c[3]?.v || '', // Pregunta
+                            s: row.c[2]?.v || '', q: row.c[3]?.v || '',
                             o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v),
                             a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3,
-                            img: row.c[9]?.v || null // Columna J
+                            img: row.c[9]?.v || null
                         });
                     }
                 });
@@ -211,45 +155,34 @@
             } catch (e) { console.error(e); }
         }
 
-        function adjustText(n) {
-            qSize = Math.max(1, Math.min(2.5, qSize + (n * 0.1)));
-            oSize = Math.max(0.8, Math.min(1.8, oSize + (n * 0.1)));
-            document.documentElement.style.setProperty('--q-text', qSize + 'rem');
-            document.documentElement.style.setProperty('--o-text', oSize + 'rem');
+        function adjustFont(n) {
+            fontSize = Math.max(14, Math.min(32, fontSize + n));
+            document.documentElement.style.setProperty('--base-text', fontSize + 'px');
         }
 
-        function toggleConfig() {
-            document.getElementById('configMenu').classList.toggle('hidden');
-        }
+        function toggleConfig() { document.getElementById('configMenu').classList.toggle('hidden'); }
 
         function render() {
             const root = document.getElementById('app');
-            
             if (state.view === 'home') {
                 root.innerHTML = `
                 <div class="text-center py-20 animate-fade">
-                    <h1 class="text-5xl font-black mb-10 tracking-tighter">SIMULADOR <span class="text-blue-500">PRO</span></h1>
+                    <h1 class="text-5xl font-black mb-10 tracking-tighter uppercase">Simulador <span class="text-blue-500">ASG</span></h1>
                     <div class="grid md:grid-cols-3 gap-6">
                         <button onclick="start('UNAM')" class="dark-glass p-8 rounded-[2.5rem] hover:border-yellow-500 transition-all">
-                            <div class="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fa-solid fa-shield-halved text-yellow-500"></i>
-                            </div>
+                            <i class="fa-solid fa-shield-halved text-yellow-500 text-3xl mb-4"></i>
                             <h3 class="text-2xl font-black">UNAM</h3>
-                            <p class="text-gray-500 text-sm mt-2 font-bold uppercase tracking-widest">Área 1</p>
+                            <p class="text-gray-500 text-sm mt-2">Área 1</p>
                         </button>
                         <button onclick="start('BUAP')" class="dark-glass p-8 rounded-[2.5rem] hover:border-blue-500 transition-all">
-                            <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fa-solid fa-atom text-blue-500"></i>
-                            </div>
+                            <i class="fa-solid fa-atom text-blue-500 text-3xl mb-4"></i>
                             <h3 class="text-2xl font-black">BUAP</h3>
                             <p class="text-gray-500 text-sm mt-2">Examen General</p>
                         </button>
                         <button onclick="start('UV')" class="dark-glass p-8 rounded-[2.5rem] hover:border-green-500 transition-all">
-                            <div class="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fa-solid fa-leaf text-green-500"></i>
-                            </div>
+                            <i class="fa-solid fa-leaf text-green-500 text-3xl mb-4"></i>
                             <h3 class="text-2xl font-black">UV</h3>
-                            <p class="text-gray-500 text-sm mt-2 font-bold">EXANI-II</p>
+                            <p class="text-gray-500 text-sm mt-2">EXANI-II</p>
                         </button>
                     </div>
                 </div>`;
@@ -258,47 +191,30 @@
                 root.innerHTML = `
                 <div class="grid lg:grid-cols-4 gap-8">
                     <div class="lg:col-span-1 space-y-4">
-                        <div class="dark-glass p-6 rounded-3xl text-center">
-                            <div id="timer" class="text-3xl font-mono font-black text-white">00:00</div>
-                        </div>
+                        <div class="dark-glass p-6 rounded-3xl text-center"><div id="timer" class="text-3xl font-mono font-black">00:00</div></div>
                         <div class="dark-glass p-4 rounded-3xl grid grid-cols-5 gap-2">
-                            ${state.questions.map((_, i) => `
-                                <button onclick="state.index=${i};render()" class="h-10 rounded-lg text-[10px] font-bold ${state.index === i ? 'bg-white text-black' : (state.answers[i] !== undefined ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-500')}">
-                                    ${i + 1}
-                                </button>
-                            `).join('')}
+                            ${state.questions.map((_, i) => `<button onclick="state.index=${i};render()" class="h-10 rounded-lg text-[10px] font-bold ${state.index === i ? 'bg-white text-black' : (state.answers[i] !== undefined ? 'bg-blue-600' : 'bg-zinc-800 text-gray-500')}">${i+1}</button>`).join('')}
                         </div>
+                        <button onclick="finish()" class="w-full bg-red-600/20 text-red-400 py-4 rounded-2xl font-black text-xs hover:bg-red-600 hover:text-white transition-all">FINALIZAR EXAMEN</button>
                     </div>
-                    
                     <div class="lg:col-span-3">
                         <div class="dark-glass p-8 md:p-12 rounded-[3rem]">
                             <div class="flex justify-between mb-8">
-                                <span class="bg-zinc-800 px-4 py-1 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-widest">${q.s}</span>
-                                <span class="text-xs text-gray-600 font-bold uppercase tracking-tighter">Paso ${state.index + 1} / ${state.questions.length}</span>
+                                <span class="bg-zinc-800 px-4 py-1 rounded-full text-[10px] font-black text-gray-400 uppercase">${q.s}</span>
+                                <span class="text-xs text-gray-600 font-bold">Pregunta ${state.index + 1} de ${state.questions.length}</span>
                             </div>
-
-                            ${q.img ? `<div class="img-box mb-8 flex justify-center bg-white/5 p-4 rounded-2xl"><img src="${q.img}"></div>` : ''}
-
-                            <h2 class="question-text font-bold mb-10 leading-snug text-white">${q.q}</h2>
-
+                            ${q.img ? `<div class="img-box mb-8 flex justify-center bg-white/5 p-4"><img src="${q.img}"></div>` : ''}
+                            <h2 class="dynamic-text font-bold mb-10 leading-snug">${q.q}</h2>
                             <div class="grid gap-4">
-                                ${q.o.map((opt, i) => {
-                                    const isImg = opt.startsWith('http');
-                                    return `
-                                    <button onclick="state.answers[state.index]=${i};render()" class="option-btn w-full p-6 rounded-2xl flex items-center gap-6 ${state.answers[state.index] === i ? 'selected' : ''}">
-                                        <span class="w-10 h-10 rounded-full bg-black/20 flex items-center justify-center font-black">${String.fromCharCode(65+i)}</span>
-                                        <div class="flex-1 text-left option-text">
-                                            ${isImg ? `<img src="${opt}" class="max-h-24 mx-auto">` : `<span>${opt}</span>`}
-                                        </div>
-                                    </button>`;
-                                }).join('')}
+                                ${q.o.map((opt, i) => `
+                                    <button onclick="state.answers[state.index]=${i};render()" class="option-btn dynamic-text w-full p-6 rounded-2xl flex items-center gap-6 ${state.answers[state.index] === i ? 'selected' : ''}">
+                                        <span class="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-sm font-black">${String.fromCharCode(65+i)}</span>
+                                        <div class="flex-1 text-left">${opt.startsWith('http') ? `<img src="${opt}" class="max-h-24 mx-auto">` : `<span>${opt}</span>`}</div>
+                                    </button>`).join('')}
                             </div>
-
                             <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
-                                <button onclick="if(state.index>0){state.index--;render()}" class="text-gray-500 font-bold hover:text-white transition uppercase text-xs tracking-widest">← Anterior</button>
-                                <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-blue-500/20 text-xs tracking-widest">
-                                    ${state.index === state.questions.length - 1 ? 'FINALIZAR' : 'SIGUIENTE →'}
-                                </button>
+                                <button onclick="if(state.index>0){state.index--;render()}" class="text-gray-500 font-bold hover:text-white transition">← ANTERIOR</button>
+                                <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-blue-500/20">SIGUIENTE →</button>
                             </div>
                         </div>
                     </div>
@@ -309,42 +225,30 @@
                 state.questions.forEach((q, i) => { if(state.answers[i] === q.a) score++; });
                 root.innerHTML = `
                 <div class="max-w-xl mx-auto dark-glass p-16 rounded-[4rem] text-center">
-                    <h2 class="text-xl font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Resultado</h2>
+                    <h2 class="text-xl font-black text-gray-400 mb-4 tracking-widest uppercase">Puntaje Obtenido</h2>
                     <div class="text-[10rem] font-black leading-none text-white mb-4">${score}</div>
-                    <p class="text-xl text-gray-500 font-bold mb-12">ACIERTOS DE ${state.questions.length}</p>
-                    <button onclick="location.reload()" class="w-full bg-white text-black py-5 rounded-2xl font-black text-lg hover:bg-gray-200 transition">VOLVER AL INICIO</button>
+                    <p class="text-gray-500 font-bold mb-12 uppercase">Aciertos de ${state.questions.length}</p>
+                    <button onclick="location.reload()" class="w-full bg-white text-black py-5 rounded-2xl font-black hover:invert transition">NUEVO INTENTO</button>
                 </div>`;
             }
         }
 
         function start(id) {
             const versions = Object.keys(state.database[id]);
-            if (versions.length === 0) return alert("Cargando datos, por favor espera...");
-            const ver = versions[0];
-            state.questions = state.database[id][ver];
-            state.timeLeft = 180 * 60;
-            state.view = 'quiz';
-            state.index = 0;
-            state.answers = {};
+            state.questions = state.database[id][versions[0]];
+            state.timeLeft = 180 * 60; state.view = 'quiz'; state.index = 0; state.answers = {};
             if(state.timer) clearInterval(state.timer);
-            state.timer = setInterval(() => {
-                state.timeLeft--;
-                if(state.timeLeft <= 0) finish();
-                updateTimer();
-            }, 1000);
+            state.timer = setInterval(() => { state.timeLeft--; if(state.timeLeft <= 0) finish(); updateTimer(); }, 1000);
             render();
         }
 
         function updateTimer() {
             const el = document.getElementById('timer');
-            if(el) {
-                const m = Math.floor(state.timeLeft / 60);
-                const s = state.timeLeft % 60;
-                el.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-            }
+            if(el) { const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60; el.innerText = `${m}:${s < 10 ? '0' : ''}${s}`; }
         }
 
         function finish() { clearInterval(state.timer); state.view = 'results'; render(); }
+        loadData();
     </script>
 </body>
 </html>
