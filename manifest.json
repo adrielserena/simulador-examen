@@ -1,0 +1,17 @@
+{
+  "name": "Simulador examen",
+  "short_name": "Simulador",
+  "description": "Plataforma de simulacros UNAM, BUAP y UV",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6d28d9",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3407/3407024.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
