@@ -9,7 +9,7 @@
     <style>
         :root {
             --primary: #000000;
-            --base-text: 18px;
+            --base-text: 18px; /* Tamaño base para preguntas */
         }
 
         body {
@@ -19,6 +19,7 @@
             overflow-x: hidden;
         }
 
+        /* El ajuste de letra solo afecta a estos elementos */
         .dynamic-text { font-size: var(--base-text) !important; transition: font-size 0.2s ease; }
 
         .bg-glow {
@@ -76,21 +77,7 @@
         }
 
         .config-panel { background: #111; border-left: 1px solid #333; }
-        .img-box img { max-width: 100%; border-radius: 15px; border: 1px solid #333; max-height: 300px; object-contain: center; }
-        
-        /* Scroll personalizado para los números de pregunta */
-        .question-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            max-height: 350px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-        .question-grid::-webkit-scrollbar { width: 4px; }
-        .question-grid::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-
+        .img-box img { max-width: 100%; border-radius: 15px; border: 1px solid #333; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -104,173 +91,164 @@
         <p class="text-gray-500 tracking-[0.5em] text-xs mt-4 uppercase">Simulador 2026</p>
     </div>
 
-    <button onclick="toggleConfig()" class="fixed top-6 right-6 z-50 text-gray-400 hover:text-white transition-all">
+    <button onclick="toggleConfig()" class="fixed top-6 right-6 z-50 text-gray-400 hover:text-white hover:rotate-45 transition-all">
         <i class="fa-solid fa-ellipsis-vertical text-2xl"></i>
     </button>
 
     <div id="configMenu" class="hidden fixed inset-0 z-[60] flex justify-end">
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleConfig()"></div>
         <div class="config-panel w-80 h-full p-8 relative z-10 flex flex-col">
-            <h3 class="text-xl font-black mb-10 uppercase tracking-tighter">Ajustes</h3>
+            <h3 class="text-xl font-black mb-10">AJUSTES</h3>
             <div class="space-y-8">
                 <div>
-                    <label class="text-[10px] text-gray-500 uppercase font-black block mb-4 tracking-widest">Tamaño de Fuente</label>
+                    <label class="text-xs text-gray-500 uppercase font-bold block mb-4">Tamaño de Pregunta</label>
                     <div class="flex gap-2">
-                        <button onclick="adjustFont(-2)" class="flex-1 bg-zinc-800 py-4 rounded-2xl hover:bg-zinc-700 font-bold">- A</button>
-                        <button onclick="adjustFont(2)" class="flex-1 bg-zinc-800 py-4 rounded-2xl hover:bg-zinc-700 font-bold">+ A</button>
+                        <button onclick="adjustFont(-2)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700">- A</button>
+                        <button onclick="adjustFont(2)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700">+ A</button>
                     </div>
                 </div>
-                <div class="bg-zinc-900 p-6 rounded-[2rem] border border-zinc-800">
-                    <p class="text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Soporte</p>
-                    <a href="mailto:adrielserena7@gmail.com" class="flex items-center gap-3 text-blue-400 font-bold break-all">
-                        <i class="fa-solid fa-envelope"></i> adrielserena7@gmail.com
+                <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                    <p class="text-xs text-gray-500 mb-2 uppercase font-bold">Ayuda Técnica</p>
+                    <a href="mailto:adrielserena7@gmail.com" class="flex items-center gap-3 text-blue-400 font-bold">
+                        <i class="fa-solid fa-envelope"></i> Soporte Adriel
                     </a>
                 </div>
             </div>
-            <div class="mt-auto text-[10px] text-gray-700 text-center uppercase font-black tracking-[0.3em]">ASG PLATFORM v3.2</div>
+            <div class="mt-auto text-[10px] text-gray-600 text-center uppercase tracking-widest">ASG v3.1 • 2026</div>
         </div>
     </div>
 
     <main id="app" class="max-w-5xl mx-auto px-4 pt-20 pb-10"></main>
 
-<script>
-    const SHEET_ID = '1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4';
-    let state = { database: {}, view: 'home', questions: [], index: 0, answers: {}, timeLeft: 180 * 60, timer: null };
+    <script>
+        const SHEET_ID = '1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4';
+        let fontSize = 18;
+        let state = { database: { UNAM: {}, BUAP: {}, UV: {} }, view: 'home', questions: [], index: 0, answers: {}, timeLeft: 0, timer: null };
 
-    async function loadData() {
-        try {
-            // Traemos hasta la fila 500 para que no falte nada
-            const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:J500`);
-            const txt = await res.text();
-            const json = JSON.parse(txt.substring(47).slice(0, -2));
-            
-            // Reiniciamos la base de datos completamente
-            state.database = { UNAM: {}, BUAP: {}, UV: {} };
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const s = document.getElementById('splash');
+                s.style.opacity = '0';
+                setTimeout(() => s.classList.add('hidden'), 800);
+            }, 2500);
+        });
 
-            json.table.rows.forEach(row => {
-                if (row.c && row.c[0] && row.c[1]) {
-                    const uni = String(row.c[0].v).toUpperCase().trim();
-                    // Limpieza extrema: quitamos espacios y pasamos a mayúsculas para que "simulacro 1" sea igual a "Simulacro 1"
-                    const ver = String(row.c[1].v).toUpperCase().trim(); 
-                    
-                    if (state.database[uni]) {
+        async function loadData() {
+            try {
+                const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:J`);
+                const txt = await res.text();
+                const json = JSON.parse(txt.substring(47).slice(0, -2));
+                json.table.rows.forEach(row => {
+                    const uni = row.c[0]?.v?.toUpperCase();
+                    const ver = row.c[1]?.v || '';
+                    if (uni && state.database[uni]) {
                         if (!state.database[uni][ver]) state.database[uni][ver] = [];
-                        
-                        // Extraemos el número de la pregunta de la Columna D o de la Columna J
-                        const preguntaTexto = row.c[3]?.v || "";
-                        // Intentamos sacar el número si la pregunta empieza con "1. " o similar
-                        const numExtraido = parseInt(preguntaTexto) || 0;
-
                         state.database[uni][ver].push({
-                            num: numExtraido,
-                            s: row.c[2]?.v || 'MATERIA',
-                            q: row.c[3]?.v || 'SIN PREGUNTA',
-                            o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v !== null),
+                            s: row.c[2]?.v || '', q: row.c[3]?.v || '',
+                            o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v),
                             a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3,
                             img: row.c[9]?.v || null
                         });
                     }
-                }
-            });
+                });
+                render();
+            } catch (e) { console.error(e); }
+        }
 
-            // LOG PARA DEPURACIÓN: Esto te dirá en la consola cuántas preguntas hay realmente
-            console.log("Datos cargados:", state.database);
-            
-            document.getElementById('splash').classList.add('hidden');
-            render();
-        } catch (e) { console.error("Error crítico:", e); }
-    }
+        function adjustFont(n) {
+            fontSize = Math.max(14, Math.min(32, fontSize + n));
+            document.documentElement.style.setProperty('--base-text', fontSize + 'px');
+        }
 
-    function start(uniId) {
-        const versionesDisponibles = Object.keys(state.database[uniId]);
-        if (versionesDisponibles.length === 0) return alert("No hay preguntas para " + uniId);
+        function toggleConfig() { document.getElementById('configMenu').classList.toggle('hidden'); }
 
-        // Forzamos a que agarre el simulacro aunque tengan nombres ligeramente diferentes
-        const primeraVersion = versionesDisponibles[0];
-        state.questions = state.database[uniId][primeraVersion];
-        
-        // ORDENAR POR MATERIA O POR APARICIÓN (para que Física salga primero)
-        // Si quieres que respete el orden exacto del Excel, no lo ordenamos por número
-        
-        state.index = 0;
-        state.answers = {};
-        state.view = 'quiz';
-        state.timeLeft = 180 * 60;
-
-        if(state.timer) clearInterval(state.timer);
-        state.timer = setInterval(() => { 
-            state.timeLeft--; 
-            if(state.timeLeft <= 0) finish(); 
-            const el = document.getElementById('timer');
-            if(el) {
-                const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60;
-                el.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-            }
-        }, 1000);
-        render();
-    }
-
-    function render() {
-        const root = document.getElementById('app');
-        if (state.view === 'home') {
-            root.innerHTML = `<div class="text-center py-20">
-                <h1 class="text-5xl font-black mb-10 tracking-tighter uppercase italic">Simulador <span class="text-blue-500">ASG</span></h1>
-                <div class="grid md:grid-cols-3 gap-6">
-                    ${['UNAM', 'BUAP', 'UV'].map(u => `
-                        <button onclick="start('${u}')" class="dark-glass p-12 rounded-[2.5rem] hover:border-blue-500 transition-all font-black text-3xl shadow-xl uppercase">${u}</button>
-                    `).join('')}
-                </div>
-            </div>`;
-        } else if (state.view === 'quiz') {
-            const q = state.questions[state.index];
-            root.innerHTML = `
-            <div class="grid lg:grid-cols-4 gap-8 animate-fade">
-                <div class="lg:col-span-1 space-y-4">
-                    <div class="dark-glass p-6 rounded-3xl text-center text-3xl font-mono font-black border-b-4 border-blue-500" id="timer">180:00</div>
-                    <div class="dark-glass p-4 rounded-3xl">
-                        <div class="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto pr-2" id="grid-container">
-                            ${state.questions.map((_, i) => `
-                                <button onclick="state.index=${i};render()" 
-                                    class="h-10 rounded-lg text-[10px] font-black transition-all ${state.index === i ? 'bg-white text-black scale-110 shadow-lg' : (state.answers[i] !== undefined ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-500')}">
-                                    ${i+1}
-                                </button>`).join('')}
+        function render() {
+            const root = document.getElementById('app');
+            if (state.view === 'home') {
+                root.innerHTML = `
+                <div class="text-center py-20 animate-fade">
+                    <h1 class="text-5xl font-black mb-10 tracking-tighter uppercase">Simulador <span class="text-blue-500">ASG</span></h1>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <button onclick="start('UNAM')" class="dark-glass p-8 rounded-[2.5rem] hover:border-yellow-500 transition-all">
+                            <i class="fa-solid fa-shield-halved text-yellow-500 text-3xl mb-4"></i>
+                            <h3 class="text-2xl font-black">UNAM</h3>
+                            <p class="text-gray-500 text-sm mt-2">Área 1</p>
+                        </button>
+                        <button onclick="start('BUAP')" class="dark-glass p-8 rounded-[2.5rem] hover:border-blue-500 transition-all">
+                            <i class="fa-solid fa-atom text-blue-500 text-3xl mb-4"></i>
+                            <h3 class="text-2xl font-black">BUAP</h3>
+                            <p class="text-gray-500 text-sm mt-2">Examen General</p>
+                        </button>
+                        <button onclick="start('UV')" class="dark-glass p-8 rounded-[2.5rem] hover:border-green-500 transition-all">
+                            <i class="fa-solid fa-leaf text-green-500 text-3xl mb-4"></i>
+                            <h3 class="text-2xl font-black">UV</h3>
+                            <p class="text-gray-500 text-sm mt-2">EXANI-II</p>
+                        </button>
+                    </div>
+                </div>`;
+            } else if (state.view === 'quiz') {
+                const q = state.questions[state.index];
+                root.innerHTML = `
+                <div class="grid lg:grid-cols-4 gap-8">
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="dark-glass p-6 rounded-3xl text-center"><div id="timer" class="text-3xl font-mono font-black">00:00</div></div>
+                        <div class="dark-glass p-4 rounded-3xl grid grid-cols-5 gap-2">
+                            ${state.questions.map((_, i) => `<button onclick="state.index=${i};render()" class="h-10 rounded-lg text-[10px] font-bold ${state.index === i ? 'bg-white text-black' : (state.answers[i] !== undefined ? 'bg-blue-600' : 'bg-zinc-800 text-gray-500')}">${i+1}</button>`).join('')}
+                        </div>
+                        <button onclick="finish()" class="w-full bg-red-600/20 text-red-400 py-4 rounded-2xl font-black text-xs hover:bg-red-600 hover:text-white transition-all">FINALIZAR EXAMEN</button>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <div class="dark-glass p-8 md:p-12 rounded-[3rem]">
+                            <div class="flex justify-between mb-8">
+                                <span class="bg-zinc-800 px-4 py-1 rounded-full text-[10px] font-black text-gray-400 uppercase">${q.s}</span>
+                                <span class="text-xs text-gray-600 font-bold">Pregunta ${state.index + 1} de ${state.questions.length}</span>
+                            </div>
+                            ${q.img ? `<div class="img-box mb-8 flex justify-center bg-white/5 p-4"><img src="${q.img}"></div>` : ''}
+                            <h2 class="dynamic-text font-bold mb-10 leading-snug">${q.q}</h2>
+                            <div class="grid gap-4">
+                                ${q.o.map((opt, i) => `
+                                    <button onclick="state.answers[state.index]=${i};render()" class="option-btn dynamic-text w-full p-6 rounded-2xl flex items-center gap-6 ${state.answers[state.index] === i ? 'selected' : ''}">
+                                        <span class="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-sm font-black">${String.fromCharCode(65+i)}</span>
+                                        <div class="flex-1 text-left">${opt.startsWith('http') ? `<img src="${opt}" class="max-h-24 mx-auto">` : `<span>${opt}</span>`}</div>
+                                    </button>`).join('')}
+                            </div>
+                            <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
+                                <button onclick="if(state.index>0){state.index--;render()}" class="text-gray-500 font-bold hover:text-white transition">← ANTERIOR</button>
+                                <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-blue-500/20">SIGUIENTE →</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="lg:col-span-3 dark-glass p-8 md:p-12 rounded-[3rem] border border-white/10">
-                    <div class="flex justify-between text-[10px] font-black text-blue-400 uppercase mb-8 tracking-[0.2em]">
-                        <span>• ${q.s}</span>
-                        <span class="text-zinc-500">PREGUNTA ${state.index + 1} DE ${state.questions.length}</span>
-                    </div>
-                    ${q.img ? `<div class="mb-8 flex justify-center bg-white/5 p-4 rounded-3xl border border-white/5"><img src="${q.img}" class="max-h-64 object-contain"></div>` : ''}
-                    <h2 class="text-2xl font-bold mb-10 text-white leading-tight">${q.q}</h2>
-                    <div class="grid gap-4">
-                        ${q.o.map((opt, i) => `
-                            <button onclick="state.answers[state.index]=${i};render()" class="w-full p-6 rounded-2xl text-left flex items-center gap-6 border-2 transition-all duration-200 ${state.answers[state.index] === i ? 'bg-white text-black border-white shadow-2xl' : 'bg-zinc-900/50 border-white/5 text-zinc-300 hover:bg-zinc-800'}">
-                                <span class="w-10 h-10 rounded-full bg-black/20 flex items-center justify-center text-sm font-black">${String.fromCharCode(65+i)}</span>
-                                <div class="flex-1 font-medium">${String(opt).startsWith('http') ? `<img src="${opt}" class="max-h-24">` : opt}</div>
-                            </button>`).join('')}
-                    </div>
-                    <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
-                        <button onclick="if(state.index>0){state.index--;render()}" class="text-zinc-500 font-black hover:text-white transition-colors uppercase text-xs tracking-widest">← Anterior</button>
-                        <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 px-12 py-4 rounded-2xl font-black text-white shadow-lg shadow-blue-500/40 hover:scale-105 transition-transform uppercase text-xs tracking-widest">Siguiente →</button>
-                    </div>
-                </div>
-            </div>`;
-        } else if (state.view === 'results') {
-            let score = 0;
-            state.questions.forEach((q, i) => { if(state.answers[i] === q.a) score++; });
-            root.innerHTML = `<div class="max-w-xl mx-auto text-center p-20 dark-glass rounded-[4rem] border border-white/10">
-                <h2 class="text-xl font-black text-zinc-500 mb-4 tracking-[0.4em] uppercase">Resultado Final</h2>
-                <div class="text-[12rem] font-black leading-none mb-6 text-white tracking-tighter">${score}</div>
-                <p class="text-zinc-500 font-bold mb-12 uppercase tracking-[0.2em]">Aciertos de ${state.questions.length}</p>
-                <button onclick="location.reload()" class="bg-white text-black w-full py-6 rounded-3xl font-black text-xl hover:bg-blue-500 hover:text-white transition-all shadow-2xl">VOLVER AL INICIO</button>
-            </div>`;
+                </div>`;
+                updateTimer();
+            } else if (state.view === 'results') {
+                let score = 0;
+                state.questions.forEach((q, i) => { if(state.answers[i] === q.a) score++; });
+                root.innerHTML = `
+                <div class="max-w-xl mx-auto dark-glass p-16 rounded-[4rem] text-center">
+                    <h2 class="text-xl font-black text-gray-400 mb-4 tracking-widest uppercase">Puntaje Obtenido</h2>
+                    <div class="text-[10rem] font-black leading-none text-white mb-4">${score}</div>
+                    <p class="text-gray-500 font-bold mb-12 uppercase">Aciertos de ${state.questions.length}</p>
+                    <button onclick="location.reload()" class="w-full bg-white text-black py-5 rounded-2xl font-black hover:invert transition">NUEVO INTENTO</button>
+                </div>`;
+            }
         }
-    }
 
-    function finish() { clearInterval(state.timer); state.view = 'results'; render(); }
-    loadData();
-</script>
+        function start(id) {
+            const versions = Object.keys(state.database[id]);
+            state.questions = state.database[id][versions[0]];
+            state.timeLeft = 180 * 60; state.view = 'quiz'; state.index = 0; state.answers = {};
+            if(state.timer) clearInterval(state.timer);
+            state.timer = setInterval(() => { state.timeLeft--; if(state.timeLeft <= 0) finish(); updateTimer(); }, 1000);
+            render();
+        }
+
+        function updateTimer() {
+            const el = document.getElementById('timer');
+            if(el) { const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60; el.innerText = `${m}:${s < 10 ? '0' : ''}${s}`; }
+        }
+
+        function finish() { clearInterval(state.timer); state.view = 'results'; render(); }
+        loadData();
+    </script>
 </body>
 </html>
