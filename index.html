@@ -9,22 +9,22 @@
     <style>
         :root {
             --primary: #000000;
-            --accent-unam: #fbbf24;
-            --accent-buap: #0ea5e9;
-            --accent-uv: #10b981;
-            --base-text: 16px;
+            --q-text: 1.5rem; /* Tamaño inicial pregunta */
+            --o-text: 1rem;   /* Tamaño inicial opciones */
         }
 
         body {
             background-color: #000000;
             color: #e2e8f0;
-            font-size: var(--base-text);
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
-            transition: font-size 0.2s ease;
         }
 
-        /* Fondo Interactivo Animado */
+        /* Ajuste Dinámico de Texto */
+        .question-text { font-size: var(--q-text); transition: font-size 0.2s; }
+        .option-text { font-size: var(--o-text); transition: font-size 0.2s; }
+
+        /* Fondo Interactivo */
         .bg-glow {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -60,18 +60,16 @@
             transition: opacity 0.8s ease, visibility 0.8s;
         }
 
-       .uni-logo {
-    font-weight: 900;
-    font-size: 3rem;
-    background: linear-gradient(to right, #fbbf24, #0ea5e9, #10b981);
-    background-clip: text; /* Versión estándar */
-    -webkit-background-clip: text; /* Mantenemos esta para iPhones/Safari */
-    color: transparent; /* En lugar de -webkit-text-fill-color */
-    letter-spacing: -2px;
-}
+        .uni-logo {
+            font-weight: 900;
+            font-size: 3rem;
+            background: linear-gradient(to right, #fbbf24, #0ea5e9, #10b981);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -2px;
+        }
 
-
-        /* Glass Cards modo Oscuro */
         .dark-glass {
             background: rgba(20, 20, 20, 0.7);
             backdrop-filter: blur(15px);
@@ -98,7 +96,6 @@
             font-weight: bold;
         }
 
-        /* Ajustes de Configuración */
         .config-panel {
             background: #111;
             border-left: 1px solid #333;
@@ -136,40 +133,40 @@
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleConfig()"></div>
         <div class="config-panel w-80 h-full p-8 relative z-10 flex flex-col">
             <div class="flex justify-between items-center mb-10">
-                <h3 class="text-xl font-black">AJUSTES</h3>
-                <button onclick="toggleConfig()"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="text-xl font-black text-white">AJUSTES</h3>
+                <button onclick="toggleConfig()" class="text-gray-400"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
 
             <div class="space-y-8">
                 <div>
-                    <label class="text-xs text-gray-500 uppercase font-bold block mb-4">Tamaño de Texto</label>
+                    <label class="text-xs text-gray-500 uppercase font-bold block mb-4">Tamaño de Fuente (Pregunta/Respuestas)</label>
                     <div class="flex gap-2">
-                        <button onclick="adjustFont(-2)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700">- A</button>
-                        <button onclick="adjustFont(2)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700">+ A</button>
+                        <button onclick="adjustText(-1)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700 text-white">- A</button>
+                        <button onclick="adjustText(1)" class="flex-1 bg-zinc-800 py-3 rounded-xl hover:bg-zinc-700 text-white">+ A</button>
                     </div>
                 </div>
 
                 <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                    <p class="text-xs text-gray-500 mb-2 uppercase font-bold">Ayuda</p>
-                    <a href="https://wa.me/522261000000" class="flex items-center gap-3 text-blue-400 font-bold">
-                        <i class="fa-brands fa-whatsapp"></i> Soporte Adriel
+                    <p class="text-xs text-gray-500 mb-2 uppercase font-bold">Ayuda y Reportes</p>
+                    <a href="mailto:adrielserena7@gmail.com" class="flex items-center gap-3 text-blue-400 font-bold hover:text-blue-300">
+                        <i class="fa-solid fa-envelope"></i> Soporte Adriel
                     </a>
                 </div>
             </div>
 
-            <div class="mt-auto text-[10px] text-gray-600 text-center">
+            <div class="mt-auto text-[10px] text-gray-600 text-center uppercase tracking-widest font-bold">
                 PLATAFORMA ASG v3.0 • VERACRUZ
             </div>
         </div>
     </div>
 
-    <main id="app" class="max-w-5xl mx-auto px-4 pt-20 pb-10">
-        </main>
+    <main id="app" class="max-w-5xl mx-auto px-4 pt-20 pb-10"></main>
 
     <script>
         const SHEET_ID = '1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4';
-        let fontSize = 16;
-        
+        let qSize = 1.5; 
+        let oSize = 1;
+
         let state = {
             database: { UNAM: {}, BUAP: {}, UV: {} },
             view: 'home',
@@ -180,18 +177,17 @@
             timer: null
         };
 
-        // Splash Screen Logic
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splash');
                 splash.style.opacity = '0';
                 setTimeout(() => splash.classList.add('hidden'), 800);
             }, 2500);
+            loadData();
         });
 
         async function loadData() {
             try {
-                // Rango A a J para incluir la columna de imagen
                 const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:J`;
                 const res = await fetch(url);
                 const txt = await res.text();
@@ -207,7 +203,7 @@
                             q: row.c[3]?.v || '', // Pregunta
                             o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v),
                             a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3,
-                            img: row.c[9]?.v || null // Columna J: Link Imagen
+                            img: row.c[9]?.v || null // Columna J
                         });
                     }
                 });
@@ -215,9 +211,11 @@
             } catch (e) { console.error(e); }
         }
 
-        function adjustFont(n) {
-            fontSize = Math.max(12, Math.min(24, fontSize + n));
-            document.documentElement.style.setProperty('--base-text', fontSize + 'px');
+        function adjustText(n) {
+            qSize = Math.max(1, Math.min(2.5, qSize + (n * 0.1)));
+            oSize = Math.max(0.8, Math.min(1.8, oSize + (n * 0.1)));
+            document.documentElement.style.setProperty('--q-text', qSize + 'rem');
+            document.documentElement.style.setProperty('--o-text', oSize + 'rem');
         }
 
         function toggleConfig() {
@@ -237,7 +235,7 @@
                                 <i class="fa-solid fa-shield-halved text-yellow-500"></i>
                             </div>
                             <h3 class="text-2xl font-black">UNAM</h3>
-                            <p class="text-gray-500 text-sm mt-2">Área 1 y 2</p>
+                            <p class="text-gray-500 text-sm mt-2 font-bold uppercase tracking-widest">Área 1</p>
                         </button>
                         <button onclick="start('BUAP')" class="dark-glass p-8 rounded-[2.5rem] hover:border-blue-500 transition-all">
                             <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -251,7 +249,7 @@
                                 <i class="fa-solid fa-leaf text-green-500"></i>
                             </div>
                             <h3 class="text-2xl font-black">UV</h3>
-                            <p class="text-gray-500 text-sm mt-2">EXANI-II</p>
+                            <p class="text-gray-500 text-sm mt-2 font-bold">EXANI-II</p>
                         </button>
                     </div>
                 </div>`;
@@ -272,16 +270,16 @@
                         </div>
                     </div>
                     
-                    <div class="lg:col-span-3 space-y-6">
+                    <div class="lg:col-span-3">
                         <div class="dark-glass p-8 md:p-12 rounded-[3rem]">
                             <div class="flex justify-between mb-8">
                                 <span class="bg-zinc-800 px-4 py-1 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-widest">${q.s}</span>
-                                <span class="text-xs text-gray-600 font-bold">Paso ${state.index + 1} de ${state.questions.length}</span>
+                                <span class="text-xs text-gray-600 font-bold uppercase tracking-tighter">Paso ${state.index + 1} / ${state.questions.length}</span>
                             </div>
 
                             ${q.img ? `<div class="img-box mb-8 flex justify-center bg-white/5 p-4 rounded-2xl"><img src="${q.img}"></div>` : ''}
 
-                            <h2 class="text-2xl md:text-3xl font-bold mb-10 leading-snug">${q.q}</h2>
+                            <h2 class="question-text font-bold mb-10 leading-snug text-white">${q.q}</h2>
 
                             <div class="grid gap-4">
                                 ${q.o.map((opt, i) => {
@@ -289,7 +287,7 @@
                                     return `
                                     <button onclick="state.answers[state.index]=${i};render()" class="option-btn w-full p-6 rounded-2xl flex items-center gap-6 ${state.answers[state.index] === i ? 'selected' : ''}">
                                         <span class="w-10 h-10 rounded-full bg-black/20 flex items-center justify-center font-black">${String.fromCharCode(65+i)}</span>
-                                        <div class="flex-1 text-left">
+                                        <div class="flex-1 text-left option-text">
                                             ${isImg ? `<img src="${opt}" class="max-h-24 mx-auto">` : `<span>${opt}</span>`}
                                         </div>
                                     </button>`;
@@ -297,9 +295,9 @@
                             </div>
 
                             <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
-                                <button onclick="if(state.index>0){state.index--;render()}" class="text-gray-500 font-bold hover:text-white transition">← ANTERIOR</button>
-                                <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-blue-500/20">
-                                    ${state.index === state.questions.length - 1 ? 'TERMINAR' : 'SIGUIENTE →'}
+                                <button onclick="if(state.index>0){state.index--;render()}" class="text-gray-500 font-bold hover:text-white transition uppercase text-xs tracking-widest">← Anterior</button>
+                                <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-blue-500/20 text-xs tracking-widest">
+                                    ${state.index === state.questions.length - 1 ? 'FINALIZAR' : 'SIGUIENTE →'}
                                 </button>
                             </div>
                         </div>
@@ -311,16 +309,17 @@
                 state.questions.forEach((q, i) => { if(state.answers[i] === q.a) score++; });
                 root.innerHTML = `
                 <div class="max-w-xl mx-auto dark-glass p-16 rounded-[4rem] text-center">
-                    <h2 class="text-2xl font-black text-gray-400 uppercase tracking-widest mb-4">Resultado Final</h2>
+                    <h2 class="text-xl font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Resultado</h2>
                     <div class="text-[10rem] font-black leading-none text-white mb-4">${score}</div>
-                    <p class="text-xl text-gray-500 font-bold mb-12">ACIERTOS TOTALES</p>
-                    <button onclick="location.reload()" class="w-full bg-white text-black py-5 rounded-2xl font-black text-lg hover:invert transition">VOLVER AL INICIO</button>
+                    <p class="text-xl text-gray-500 font-bold mb-12">ACIERTOS DE ${state.questions.length}</p>
+                    <button onclick="location.reload()" class="w-full bg-white text-black py-5 rounded-2xl font-black text-lg hover:bg-gray-200 transition">VOLVER AL INICIO</button>
                 </div>`;
             }
         }
 
         function start(id) {
             const versions = Object.keys(state.database[id]);
+            if (versions.length === 0) return alert("Cargando datos, por favor espera...");
             const ver = versions[0];
             state.questions = state.database[id][ver];
             state.timeLeft = 180 * 60;
@@ -346,7 +345,6 @@
         }
 
         function finish() { clearInterval(state.timer); state.view = 'results'; render(); }
-        loadData();
     </script>
 </body>
 </html>
