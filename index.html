@@ -133,175 +133,179 @@
 
     <main id="app" class="max-w-5xl mx-auto px-4 pt-20 pb-10"></main>
 
-    <script>
-        const SHEET_ID = '1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4';
-        let fontSize = 18;
-        let state = { database: { UNAM: {}, BUAP: {}, UV: {} }, view: 'home', questions: [], index: 0, answers: {}, timeLeft: 0, timer: null };
+ <script>
+    const SHEET_ID = '1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4';
+    let fontSize = 18;
+    let state = { 
+        database: { UNAM: {}, BUAP: {}, UV: {} }, 
+        view: 'home', 
+        questions: [], 
+        index: 0, 
+        answers: {}, 
+        timeLeft: 0, 
+        timer: null 
+    };
 
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const s = document.getElementById('splash');
-                if(s) {
-                    s.style.opacity = '0';
-                    setTimeout(() => s.classList.add('hidden'), 800);
-                }
-            }, 2500);
-        });
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const s = document.getElementById('splash');
+            if(s) {
+                s.style.opacity = '0';
+                setTimeout(() => s.classList.add('hidden'), 800);
+            }
+        }, 2500);
+    });
 
-        async function loadData() {
-            try {
-                const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:J`);
-                const txt = await res.text();
-                const json = JSON.parse(txt.substring(47).slice(0, -2));
+    async function loadData() {
+        try {
+            // Ampliamos el rango a J500 para asegurar que traiga las 120+ preguntas
+            const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:J500`);
+            const txt = await res.text();
+            const json = JSON.parse(txt.substring(47).slice(0, -2));
+            
+            state.database = { UNAM: {}, BUAP: {}, UV: {} };
+
+            json.table.rows.forEach(row => {
+                if(!row.c[0] || !row.c[1]) return; // Salta filas vacías
+
+                const uni = row.c[0].v.toUpperCase();
+                const ver = String(row.c[1].v); // Simulacro 1, 2, etc.
                 
-                // Reiniciamos base de datos
-                state.database = { UNAM: {}, BUAP: {}, UV: {} };
-
-                json.table.rows.forEach(row => {
-                    const uni = row.c[0]?.v?.toUpperCase();
-                    const ver = row.c[1]?.v || 'Simulacro 1';
-                    if (uni && state.database[uni]) {
-                        if (!state.database[uni][ver]) state.database[uni][ver] = [];
-                        state.database[uni][ver].push({
-                            s: row.c[2]?.v || '', 
-                            q: row.c[3]?.v || '',
-                            o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v !== null),
-                            a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3,
-                            img: row.c[9]?.v || null
-                        });
-                    }
-                });
-                render();
-            } catch (e) { console.error("Error cargando Google Sheets:", e); }
-        }
-
-        function start(id) {
-            const versiones = Object.keys(state.database[id]);
-            if (versiones.length === 0) return alert("Aún no hay datos para esta universidad.");
-
-            // 1. ELIGE UN EXAMEN (SIMULACRO) AL AZAR
-            const verElegida = versiones[Math.floor(Math.random() * versiones.length)];
-            
-            // 2. CARGA LAS PREGUNTAS EN ORDEN ESTRICTO (COMO ESTÁN EN LA TABLA)
-            state.questions = state.database[id][verElegida];
-            
-            state.timeLeft = 180 * 60; 
-            state.view = 'quiz'; 
-            state.index = 0; 
-            state.answers = {};
-            
-            if(state.timer) clearInterval(state.timer);
-            state.timer = setInterval(() => { 
-                state.timeLeft--; 
-                if(state.timeLeft <= 0) finish(); 
-                updateTimer(); 
-            }, 1000);
+                if (state.database[uni]) {
+                    if (!state.database[uni][ver]) state.database[uni][ver] = [];
+                    state.database[uni][ver].push({
+                        s: row.c[2]?.v || 'General', 
+                        q: row.c[3]?.v || 'Sin pregunta',
+                        o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v !== null),
+                        a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3,
+                        img: row.c[9]?.v || null
+                    });
+                }
+            });
             render();
-        }
+        } catch (e) { console.error("Error cargando datos:", e); }
+    }
 
-        function render() {
-            const root = document.getElementById('app');
-            if (state.view === 'home') {
-                root.innerHTML = `
-                <div class="text-center py-20 animate-fade">
-                    <h1 class="text-5xl font-black mb-10 tracking-tighter uppercase">Simulador <span class="text-blue-500">ASG</span></h1>
-                    <div class="grid md:grid-cols-3 gap-6">
-                        <button onclick="start('UNAM')" class="dark-glass p-8 rounded-[2.5rem] hover:border-yellow-500 transition-all group">
-                            <i class="fa-solid fa-shield-halved text-yellow-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
-                            <h3 class="text-2xl font-black">UNAM</h3>
-                            <p class="text-gray-500 text-sm mt-2 font-bold">Área 1</p>
-                        </button>
-                        <button onclick="start('BUAP')" class="dark-glass p-8 rounded-[2.5rem] hover:border-blue-500 transition-all group">
-                            <i class="fa-solid fa-atom text-blue-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
-                            <h3 class="text-2xl font-black">BUAP</h3>
-                            <p class="text-gray-500 text-sm mt-2 font-bold">Examen General</p>
-                        </button>
-                        <button onclick="start('UV')" class="dark-glass p-8 rounded-[2.5rem] hover:border-green-500 transition-all group">
-                            <i class="fa-solid fa-leaf text-green-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
-                            <h3 class="text-2xl font-black">UV</h3>
-                            <p class="text-gray-500 text-sm mt-2 font-bold">EXANI-II</p>
-                        </button>
-                    </div>
-                </div>`;
-            } else if (state.view === 'quiz') {
-                const q = state.questions[state.index];
-                root.innerHTML = `
-                <div class="grid lg:grid-cols-4 gap-8">
-                    <div class="lg:col-span-1 space-y-4">
-                        <div class="dark-glass p-6 rounded-3xl text-center"><div id="timer" class="text-3xl font-mono font-black">00:00</div></div>
-                        <div class="dark-glass p-4 rounded-3xl">
-                            <div class="question-grid">
-                                ${state.questions.map((_, i) => `
-                                    <button onclick="state.index=${i};render()" 
-                                        class="h-10 rounded-lg text-[10px] font-black transition-all ${state.index === i ? 'bg-white text-black scale-105' : (state.answers[i] !== undefined ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-500')}">
-                                        ${i+1}
-                                    </button>`).join('')}
-                            </div>
-                        </div>
-                        <button onclick="finish()" class="w-full bg-red-600/10 text-red-500 py-4 rounded-2xl font-black text-xs hover:bg-red-600 hover:text-white transition-all border border-red-600/20">FINALIZAR EXAMEN</button>
-                    </div>
-                    <div class="lg:col-span-3">
-                        <div class="dark-glass p-8 md:p-12 rounded-[3rem] relative overflow-hidden">
-                            <div class="flex justify-between mb-8">
-                                <span class="bg-zinc-800/50 border border-zinc-700 px-4 py-1 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-widest">${q.s}</span>
-                                <span class="text-[10px] text-gray-600 font-black uppercase tracking-widest">Paso ${state.index + 1} de ${state.questions.length}</span>
-                            </div>
-                            
-                            ${q.img ? `<div class="img-box mb-8 flex justify-center bg-white/5 p-4 rounded-2xl"><img src="${q.img}"></div>` : ''}
-                            
-                            <h2 class="dynamic-text font-bold mb-10 leading-snug text-white">${q.q}</h2>
-                            
-                            <div class="grid gap-4">
-                                ${q.o.map((opt, i) => {
-                                    const content = String(opt).startsWith('http') ? `<img src="${opt}" class="max-h-24 mx-auto py-2">` : `<span>${opt}</span>`;
-                                    return `
-                                    <button onclick="state.answers[state.index]=${i};render()" class="option-btn dynamic-text w-full p-6 rounded-2xl flex items-center gap-6 ${state.answers[state.index] === i ? 'selected' : ''}">
-                                        <span class="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-sm font-black">${String.fromCharCode(65+i)}</span>
-                                        <div class="flex-1 text-left">${content}</div>
-                                    </button>`;
-                                }).join('')}
-                            </div>
-                            
-                            <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
-                                <button onclick="if(state.index>0){state.index--;render()}" class="text-gray-500 font-bold hover:text-white transition uppercase text-xs tracking-widest">← Anterior</button>
-                                <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-blue-500/20 text-xs tracking-widest">
-                                    ${state.index === state.questions.length - 1 ? 'FINALIZAR' : 'SIGUIENTE →'}
-                                </button>
-                            </div>
+    function start(id) {
+        const versiones = Object.keys(state.database[id]);
+        if (versiones.length === 0) return alert("No se encontraron preguntas. Revisa tu Excel.");
+
+        // Escogemos la versión (Simulacro)
+        const verElegida = versiones[0]; 
+        
+        // RESET TOTAL ANTES DE CARGAR
+        state.questions = [...state.database[id][verElegida]];
+        state.answers = {};
+        state.index = 0;
+        state.view = 'quiz';
+        state.timeLeft = 180 * 60; 
+
+        if(state.timer) clearInterval(state.timer);
+        state.timer = setInterval(() => { 
+            state.timeLeft--; 
+            if(state.timeLeft <= 0) finish(); 
+            updateTimer(); 
+        }, 1000);
+        render();
+    }
+
+    function render() {
+        const root = document.getElementById('app');
+        if (state.view === 'home') {
+            root.innerHTML = `
+            <div class="text-center py-20 animate-fade">
+                <h1 class="text-5xl font-black mb-10 tracking-tighter uppercase">Simulador <span class="text-blue-500">ASG</span></h1>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <button onclick="start('UNAM')" class="dark-glass p-8 rounded-[2.5rem] hover:border-yellow-500 transition-all">
+                        <i class="fa-solid fa-shield-halved text-yellow-500 text-3xl mb-4"></i>
+                        <h3 class="text-2xl font-black">UNAM</h3>
+                        <p class="text-gray-500 text-sm mt-2 font-bold">Área 1</p>
+                    </button>
+                    <button onclick="start('BUAP')" class="dark-glass p-8 rounded-[2.5rem] hover:border-blue-500 transition-all">
+                        <i class="fa-solid fa-atom text-blue-500 text-3xl mb-4"></i>
+                        <h3 class="text-2xl font-black">BUAP</h3>
+                        <p class="text-gray-500 text-sm mt-2 font-bold">Examen General</p>
+                    </button>
+                    <button onclick="start('UV')" class="dark-glass p-8 rounded-[2.5rem] hover:border-green-500 transition-all">
+                        <i class="fa-solid fa-leaf text-green-500 text-3xl mb-4"></i>
+                        <h3 class="text-2xl font-black">UV</h3>
+                        <p class="text-gray-500 text-sm mt-2 font-bold">EXANI-II</p>
+                    </button>
+                </div>
+            </div>`;
+        } else if (state.view === 'quiz') {
+            const q = state.questions[state.index];
+            root.innerHTML = `
+            <div class="grid lg:grid-cols-4 gap-8">
+                <div class="lg:col-span-1 space-y-4">
+                    <div class="dark-glass p-6 rounded-3xl text-center"><div id="timer" class="text-3xl font-mono font-black">00:00</div></div>
+                    <div class="dark-glass p-4 rounded-3xl">
+                        <div class="grid grid-cols-5 gap-2 max-h-[350px] overflow-y-auto pr-2">
+                            ${state.questions.map((_, i) => `
+                                <button onclick="state.index=${i};render()" 
+                                    class="h-10 rounded-lg text-[10px] font-black transition-all ${state.index === i ? 'bg-white text-black scale-105' : (state.answers[i] !== undefined ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-500')}">
+                                    ${i + 1}
+                                </button>`).join('')}
                         </div>
                     </div>
-                </div>`;
-                updateTimer();
-            } else if (state.view === 'results') {
-                let score = 0;
-                state.questions.forEach((q, i) => { if(state.answers[i] === q.a) score++; });
-                root.innerHTML = `
-                <div class="max-w-xl mx-auto dark-glass p-16 rounded-[4rem] text-center animate-fade">
-                    <h2 class="text-xl font-black text-gray-400 mb-4 tracking-[0.3em] uppercase">Resultado</h2>
-                    <div class="text-[10rem] font-black leading-none text-white mb-4 tracking-tighter">${score}</div>
-                    <p class="text-gray-500 font-bold mb-12 uppercase tracking-widest">Aciertos totales</p>
-                    <button onclick="location.reload()" class="w-full bg-white text-black py-6 rounded-3xl font-black text-lg hover:invert transition-all">REINTENTAR SIMULADOR</button>
-                </div>`;
-            }
+                    <button onclick="finish()" class="w-full bg-red-600/10 text-red-500 py-4 rounded-2xl font-black text-xs hover:bg-red-600 hover:text-white transition-all border border-red-600/20">FINALIZAR</button>
+                </div>
+                <div class="lg:col-span-3">
+                    <div class="dark-glass p-8 md:p-12 rounded-[3rem]">
+                        <div class="flex justify-between mb-8">
+                            <span class="bg-zinc-800 px-4 py-1 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-widest">${q.s}</span>
+                            <span class="text-[10px] text-gray-600 font-black uppercase tracking-widest">Pregunta ${state.index + 1} de ${state.questions.length}</span>
+                        </div>
+                        ${q.img ? `<div class="img-box mb-8 flex justify-center bg-white/5 p-4 rounded-2xl"><img src="${q.img}"></div>` : ''}
+                        <h2 class="dynamic-text font-bold mb-10 leading-snug text-white">${q.q}</h2>
+                        <div class="grid gap-4">
+                            ${q.o.map((opt, i) => `
+                                <button onclick="state.answers[state.index]=${i};render()" class="option-btn dynamic-text w-full p-6 rounded-2xl flex items-center gap-6 ${state.answers[state.index] === i ? 'selected' : ''}">
+                                    <span class="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-sm font-black">${String.fromCharCode(65+i)}</span>
+                                    <div class="flex-1 text-left">${String(opt).startsWith('http') ? `<img src="${opt}" class="max-h-24 mx-auto">` : `<span>${opt}</span>`}</div>
+                                </button>`).join('')}
+                        </div>
+                        <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
+                            <button onclick="if(state.index>0){state.index--;render()}" class="text-gray-500 font-bold hover:text-white transition uppercase text-xs tracking-widest">← Anterior</button>
+                            <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-blue-500/20 text-xs tracking-widest">
+                                ${state.index === state.questions.length - 1 ? 'TERMINAR' : 'SIGUIENTE →'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            updateTimer();
+        } else if (state.view === 'results') {
+            let score = 0;
+            state.questions.forEach((q, i) => { if(state.answers[i] === q.a) score++; });
+            root.innerHTML = `
+            <div class="max-w-xl mx-auto dark-glass p-16 rounded-[4rem] text-center">
+                <h2 class="text-xl font-black text-gray-400 mb-4 tracking-[0.3em] uppercase">Resultado</h2>
+                <div class="text-[10rem] font-black leading-none text-white mb-4 tracking-tighter">${score}</div>
+                <p class="text-gray-500 font-bold mb-12 uppercase tracking-widest">Aciertos de ${state.questions.length}</p>
+                <button onclick="location.reload()" class="w-full bg-white text-black py-6 rounded-3xl font-black text-lg hover:invert transition-all">REINTENTAR</button>
+            </div>`;
         }
+    }
 
-        function adjustFont(n) {
-            fontSize = Math.max(14, Math.min(32, fontSize + n));
-            document.documentElement.style.setProperty('--base-text', fontSize + 'px');
+    function adjustFont(n) {
+        fontSize = Math.max(14, Math.min(32, fontSize + n));
+        document.documentElement.style.setProperty('--base-text', fontSize + 'px');
+    }
+
+    function toggleConfig() { document.getElementById('configMenu').classList.toggle('hidden'); }
+
+    function updateTimer() {
+        const el = document.getElementById('timer');
+        if(el) { 
+            const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60; 
+            el.innerText = `${m}:${s < 10 ? '0' : ''}${s}`; 
         }
+    }
 
-        function toggleConfig() { document.getElementById('configMenu').classList.toggle('hidden'); }
+    function finish() { clearInterval(state.timer); state.view = 'results'; render(); }
+    loadData();
+</script>
 
-        function updateTimer() {
-            const el = document.getElementById('timer');
-            if(el) { 
-                const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60; 
-                el.innerText = `${m}:${s < 10 ? '0' : ''}${s}`; 
-            }
-        }
-
-        function finish() { clearInterval(state.timer); state.view = 'results'; render(); }
-        loadData();
-    </script>
 </body>
 </html>
