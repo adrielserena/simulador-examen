@@ -133,78 +133,73 @@
 
     <main id="app" class="max-w-5xl mx-auto px-4 pt-20 pb-10"></main>
 
- <script>
+<script>
     const SHEET_ID = '1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4';
-    let fontSize = 18;
-    let state = { 
-        database: { UNAM: {}, BUAP: {}, UV: {} }, 
-        view: 'home', 
-        questions: [], 
-        index: 0, 
-        answers: {}, 
-        timeLeft: 0, 
-        timer: null 
-    };
-
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const s = document.getElementById('splash');
-            if(s) {
-                s.style.opacity = '0';
-                setTimeout(() => s.classList.add('hidden'), 800);
-            }
-        }, 2500);
-    });
+    let state = { database: {}, view: 'home', questions: [], index: 0, answers: {}, timeLeft: 180 * 60, timer: null };
 
     async function loadData() {
         try {
-            // Ampliamos el rango a J500 para asegurar que traiga las 120+ preguntas
+            // Traemos 500 filas para asegurar que no se corte nada
             const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:J500`);
             const txt = await res.text();
             const json = JSON.parse(txt.substring(47).slice(0, -2));
             
+            // Reinicio total de la base de datos
             state.database = { UNAM: {}, BUAP: {}, UV: {} };
 
             json.table.rows.forEach(row => {
-                if(!row.c[0] || !row.c[1]) return; // Salta filas vacías
-
-                const uni = row.c[0].v.toUpperCase();
-                const ver = String(row.c[1].v); // Simulacro 1, 2, etc.
-                
-                if (state.database[uni]) {
-                    if (!state.database[uni][ver]) state.database[uni][ver] = [];
-                    state.database[uni][ver].push({
-                        s: row.c[2]?.v || 'General', 
-                        q: row.c[3]?.v || 'Sin pregunta',
-                        o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v !== null),
-                        a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3,
-                        img: row.c[9]?.v || null
-                    });
+                if (row.c && row.c[0] && row.c[1]) {
+                    const uni = row.c[0].v.toUpperCase();
+                    const ver = String(row.c[1].v).trim(); // "Simulacro 1"
+                    
+                    if (state.database[uni]) {
+                        if (!state.database[uni][ver]) state.database[uni][ver] = [];
+                        
+                        // Guardamos la pregunta
+                        state.database[uni][ver].push({
+                            num: parseInt(row.c[3]?.v) || 0, // El número de la pregunta (Col D)
+                            s: row.c[2]?.v || 'Materia',
+                            q: row.c[3]?.v || 'Pregunta',
+                            o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v !== null),
+                            a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3,
+                            img: row.c[9]?.v || null
+                        });
+                    }
                 }
             });
+
+            // ORDENAR LAS PREGUNTAS POR EL NÚMERO DE LA COLUMNA D
+            Object.keys(state.database).forEach(u => {
+                Object.keys(state.database[u]).forEach(v => {
+                    state.database[u][v].sort((a, b) => a.num - b.num);
+                });
+            });
+            
+            document.getElementById('splash').classList.add('hidden');
             render();
-        } catch (e) { console.error("Error cargando datos:", e); }
+        } catch (e) { console.error(e); }
     }
 
-    function start(id) {
-        const versiones = Object.keys(state.database[id]);
-        if (versiones.length === 0) return alert("No se encontraron preguntas. Revisa tu Excel.");
+    function start(uniId) {
+        const versiones = Object.keys(state.database[uniId]);
+        if (versiones.length === 0) return alert("No hay datos");
 
-        // Escogemos la versión (Simulacro)
-        const verElegida = versiones[0]; 
-        
-        // RESET TOTAL ANTES DE CARGAR
-        state.questions = [...state.database[id][verElegida]];
-        state.answers = {};
+        // Usamos la primera versión disponible (Simulacro 1)
+        state.questions = [...state.database[uniId][versiones[0]]]; 
         state.index = 0;
+        state.answers = {};
         state.view = 'quiz';
-        state.timeLeft = 180 * 60; 
-
+        state.timeLeft = 180 * 60;
+        
         if(state.timer) clearInterval(state.timer);
         state.timer = setInterval(() => { 
             state.timeLeft--; 
             if(state.timeLeft <= 0) finish(); 
-            updateTimer(); 
+            const el = document.getElementById('timer');
+            if(el) {
+                const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60;
+                el.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            }
         }, 1000);
         render();
     }
@@ -212,25 +207,12 @@
     function render() {
         const root = document.getElementById('app');
         if (state.view === 'home') {
-            root.innerHTML = `
-            <div class="text-center py-20 animate-fade">
-                <h1 class="text-5xl font-black mb-10 tracking-tighter uppercase">Simulador <span class="text-blue-500">ASG</span></h1>
+            root.innerHTML = `<div class="text-center py-20 animate-fade">
+                <h1 class="text-5xl font-black mb-10 uppercase">Simulador <span class="text-blue-500">ASG</span></h1>
                 <div class="grid md:grid-cols-3 gap-6">
-                    <button onclick="start('UNAM')" class="dark-glass p-8 rounded-[2.5rem] hover:border-yellow-500 transition-all">
-                        <i class="fa-solid fa-shield-halved text-yellow-500 text-3xl mb-4"></i>
-                        <h3 class="text-2xl font-black">UNAM</h3>
-                        <p class="text-gray-500 text-sm mt-2 font-bold">Área 1</p>
-                    </button>
-                    <button onclick="start('BUAP')" class="dark-glass p-8 rounded-[2.5rem] hover:border-blue-500 transition-all">
-                        <i class="fa-solid fa-atom text-blue-500 text-3xl mb-4"></i>
-                        <h3 class="text-2xl font-black">BUAP</h3>
-                        <p class="text-gray-500 text-sm mt-2 font-bold">Examen General</p>
-                    </button>
-                    <button onclick="start('UV')" class="dark-glass p-8 rounded-[2.5rem] hover:border-green-500 transition-all">
-                        <i class="fa-solid fa-leaf text-green-500 text-3xl mb-4"></i>
-                        <h3 class="text-2xl font-black">UV</h3>
-                        <p class="text-gray-500 text-sm mt-2 font-bold">EXANI-II</p>
-                    </button>
+                    ${['UNAM', 'BUAP', 'UV'].map(u => `
+                        <button onclick="start('${u}')" class="dark-glass p-10 rounded-[2rem] hover:border-blue-500 transition-all font-black text-2xl">${u}</button>
+                    `).join('')}
                 </div>
             </div>`;
         } else if (state.view === 'quiz') {
@@ -238,74 +220,50 @@
             root.innerHTML = `
             <div class="grid lg:grid-cols-4 gap-8">
                 <div class="lg:col-span-1 space-y-4">
-                    <div class="dark-glass p-6 rounded-3xl text-center"><div id="timer" class="text-3xl font-mono font-black">00:00</div></div>
-                    <div class="dark-glass p-4 rounded-3xl">
-                        <div class="grid grid-cols-5 gap-2 max-h-[350px] overflow-y-auto pr-2">
+                    <div class="dark-glass p-6 rounded-2xl text-center text-3xl font-mono" id="timer">180:00</div>
+                    <div class="dark-glass p-4 rounded-2xl">
+                        <div class="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto pr-2">
                             ${state.questions.map((_, i) => `
                                 <button onclick="state.index=${i};render()" 
-                                    class="h-10 rounded-lg text-[10px] font-black transition-all ${state.index === i ? 'bg-white text-black scale-105' : (state.answers[i] !== undefined ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-500')}">
-                                    ${i + 1}
+                                    class="h-10 rounded-lg text-[10px] font-bold ${state.index === i ? 'bg-white text-black' : (state.answers[i] !== undefined ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400')}">
+                                    ${i+1}
                                 </button>`).join('')}
                         </div>
                     </div>
-                    <button onclick="finish()" class="w-full bg-red-600/10 text-red-500 py-4 rounded-2xl font-black text-xs hover:bg-red-600 hover:text-white transition-all border border-red-600/20">FINALIZAR</button>
                 </div>
-                <div class="lg:col-span-3">
-                    <div class="dark-glass p-8 md:p-12 rounded-[3rem]">
-                        <div class="flex justify-between mb-8">
-                            <span class="bg-zinc-800 px-4 py-1 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-widest">${q.s}</span>
-                            <span class="text-[10px] text-gray-600 font-black uppercase tracking-widest">Pregunta ${state.index + 1} de ${state.questions.length}</span>
-                        </div>
-                        ${q.img ? `<div class="img-box mb-8 flex justify-center bg-white/5 p-4 rounded-2xl"><img src="${q.img}"></div>` : ''}
-                        <h2 class="dynamic-text font-bold mb-10 leading-snug text-white">${q.q}</h2>
-                        <div class="grid gap-4">
-                            ${q.o.map((opt, i) => `
-                                <button onclick="state.answers[state.index]=${i};render()" class="option-btn dynamic-text w-full p-6 rounded-2xl flex items-center gap-6 ${state.answers[state.index] === i ? 'selected' : ''}">
-                                    <span class="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-sm font-black">${String.fromCharCode(65+i)}</span>
-                                    <div class="flex-1 text-left">${String(opt).startsWith('http') ? `<img src="${opt}" class="max-h-24 mx-auto">` : `<span>${opt}</span>`}</div>
-                                </button>`).join('')}
-                        </div>
-                        <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
-                            <button onclick="if(state.index>0){state.index--;render()}" class="text-gray-500 font-bold hover:text-white transition uppercase text-xs tracking-widest">← Anterior</button>
-                            <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-blue-500/20 text-xs tracking-widest">
-                                ${state.index === state.questions.length - 1 ? 'TERMINAR' : 'SIGUIENTE →'}
-                            </button>
-                        </div>
+                <div class="lg:col-span-3 dark-glass p-8 md:p-12 rounded-[3rem]">
+                    <div class="flex justify-between text-[10px] font-black text-gray-500 uppercase mb-8 tracking-widest">
+                        <span>${q.s}</span>
+                        <span>PREGUNTA ${state.index + 1} DE ${state.questions.length}</span>
+                    </div>
+                    ${q.img ? `<div class="mb-8 flex justify-center bg-white/5 p-4 rounded-2xl border border-white/10"><img src="${q.img}" class="max-h-64 object-contain"></div>` : ''}
+                    <h2 class="text-xl font-bold mb-10 text-white leading-relaxed">${q.q}</h2>
+                    <div class="grid gap-3">
+                        ${q.o.map((opt, i) => `
+                            <button onclick="state.answers[state.index]=${i};render()" class="w-full p-6 rounded-2xl text-left flex items-center gap-6 border-2 transition-all ${state.answers[state.index] === i ? 'bg-white text-black border-white' : 'bg-zinc-900/50 border-white/5 text-gray-300 hover:border-white/20'}">
+                                <span class="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-xs font-black">${String.fromCharCode(65+i)}</span>
+                                <div class="flex-1">${String(opt).startsWith('http') ? `<img src="${opt}" class="max-h-20">` : opt}</div>
+                            </button>`).join('')}
+                    </div>
+                    <div class="flex justify-between mt-12 pt-8 border-t border-white/5">
+                        <button onclick="if(state.index>0){state.index--;render()}" class="text-gray-500 font-bold hover:text-white transition">← ANTERIOR</button>
+                        <button onclick="if(state.index<state.questions.length-1){state.index++;render()}else{finish()}" class="bg-blue-600 px-10 py-4 rounded-2xl font-black shadow-lg shadow-blue-500/20">SIGUIENTE →</button>
                     </div>
                 </div>
             </div>`;
-            updateTimer();
         } else if (state.view === 'results') {
             let score = 0;
             state.questions.forEach((q, i) => { if(state.answers[i] === q.a) score++; });
-            root.innerHTML = `
-            <div class="max-w-xl mx-auto dark-glass p-16 rounded-[4rem] text-center">
-                <h2 class="text-xl font-black text-gray-400 mb-4 tracking-[0.3em] uppercase">Resultado</h2>
-                <div class="text-[10rem] font-black leading-none text-white mb-4 tracking-tighter">${score}</div>
-                <p class="text-gray-500 font-bold mb-12 uppercase tracking-widest">Aciertos de ${state.questions.length}</p>
-                <button onclick="location.reload()" class="w-full bg-white text-black py-6 rounded-3xl font-black text-lg hover:invert transition-all">REINTENTAR</button>
+            root.innerHTML = `<div class="max-w-xl mx-auto text-center p-16 dark-glass rounded-[4rem]">
+                <h2 class="text-xl font-black text-gray-500 mb-4 tracking-widest">PUNTAJE FINAL</h2>
+                <div class="text-[10rem] font-black leading-none mb-6">${score}</div>
+                <button onclick="location.reload()" class="bg-white text-black w-full py-6 rounded-3xl font-black text-xl hover:invert transition">NUEVO INTENTO</button>
             </div>`;
-        }
-    }
-
-    function adjustFont(n) {
-        fontSize = Math.max(14, Math.min(32, fontSize + n));
-        document.documentElement.style.setProperty('--base-text', fontSize + 'px');
-    }
-
-    function toggleConfig() { document.getElementById('configMenu').classList.toggle('hidden'); }
-
-    function updateTimer() {
-        const el = document.getElementById('timer');
-        if(el) { 
-            const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60; 
-            el.innerText = `${m}:${s < 10 ? '0' : ''}${s}`; 
         }
     }
 
     function finish() { clearInterval(state.timer); state.view = 'results'; render(); }
     loadData();
 </script>
-
 </body>
 </html>
