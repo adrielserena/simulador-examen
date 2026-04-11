@@ -3,268 +3,263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Exam Pro - Adriel</title>
+    <title>Master Exam Pro - ASG</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6d28d9">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Fondo con degradado animado y patrón de puntos */
+        :root {
+            --primary: #6d28d9;
+            --secondary: #db2777;
+            --accent: #2563eb;
+        }
+
+        /* Temas Dinámicos */
+        .theme-unam { --primary: #78350f; --secondary: #d97706; --accent: #fbbf24; }
+        .theme-buap { --primary: #1e3a8a; --secondary: #0ea5e9; --accent: #bae6fd; }
+        .theme-uv { --primary: #064e3b; --secondary: #10b981; --accent: #a7f3d0; }
+
         body {
-            background-color: #6d28d9;
+            background-color: var(--primary);
             background-image: 
-                radial-gradient(at 10% 10%, #db2777 0px, transparent 50%),
-                radial-gradient(at 90% 90%, #2563eb 0px, transparent 50%),
-                url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3C%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+                radial-gradient(at 10% 10%, var(--secondary) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, var(--accent) 0px, transparent 50%),
+                url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
             background-size: 100% 100%, 100% 100%, 20px 20px;
-            animation: backgroundShift 20s ease infinite;
+            transition: all 0.5s ease;
         }
 
-        @keyframes backgroundShift {
-            0% { background-position: 0% 0%, 0% 0%, 0px 0px; }
-            50% { background-position: 100% 100%, 100% 100%, 0px 0px; }
-            100% { background-position: 0% 0%, 0% 0%, 0px 0px; }
-        }
-
-        /* Tarjeta estilo Cristal (Glassmorphism) */
         .glass-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px) saturate(180%);
-            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
         }
 
-        /* Botones de opción con efecto */
-        .option-btn {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .option-btn:hover:not(.selected) {
-            transform: translateX(8px);
-            background-color: rgba(255, 255, 255, 0.6);
-        }
+        .option-btn { transition: all 0.2s ease; }
+        .option-btn:hover:not(.selected) { transform: translateX(8px); background: #f8fafc; }
+        
         .selected {
-            border-color: #db2777 !important;
-            background-color: #fdf2f8 !important;
-            color: #9d174d !important;
+            border-color: var(--secondary) !important;
+            background-color: white !important;
+            color: var(--primary) !important;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
             font-weight: 800;
-            box-shadow: 0 4px 15px -1px rgba(219, 39, 119, 0.3);
         }
 
-        /* Burbujas de navegación */
-        .q-bubble {
-            transition: all 0.2s ease;
-        }
-        .active-q {
-            transform: scale(1.15);
-            background-color: #db2777 !important;
-            color: white !important;
-            box-shadow: 0 6px 15px rgba(219, 39, 119, 0.4);
-        }
-        .answered {
-            background-color: #10b981 !important;
-            color: white !important;
-        }
+        .active-q { transform: scale(1.1); background: var(--secondary) !important; color: white !important; }
+        .answered { background: #10b981 !important; color: white !important; }
 
-        /* Animaciones */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade { animation: fadeIn 0.4s ease forwards; }
+        .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
+
+        /* Modal de Configuración */
+        #config-modal { display: none; }
+        #config-modal.active { display: flex; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 font-sans antialiased text-slate-800">
+    
+    <button onclick="toggleConfig()" class="fixed bottom-6 right-6 z-50 bg-white/20 backdrop-blur-md p-4 rounded-full shadow-2xl hover:rotate-90 transition-all duration-500 border border-white/30">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    </button>
+
+    <div id="config-modal" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+        <div class="glass-card max-w-md w-full p-8 rounded-[2rem] shadow-2xl animate-fade">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black text-slate-800">Ajustes del Sistema</h3>
+                <button onclick="toggleConfig()" class="text-slate-400 hover:text-red-500 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="space-y-6">
+                <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Soporte Técnico</p>
+                    <p class="text-sm text-slate-600 mb-4">¿Encontraste un error en una pregunta o tienes alguna duda?</p>
+                    <a href="mailto:adrielserena7@gmail.com" class="block w-full bg-slate-900 text-white text-center py-3 rounded-xl font-bold hover:bg-slate-800 transition">Contactar a Adriel</a>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-slate-400 font-medium">Plataforma Adriel v2.0 • 2026<br>Diseñada para Veracruz, México.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="app" class="max-w-6xl mx-auto">
         <div id="loading" class="text-center mt-32 text-white animate-pulse">
-            <h2 class="text-4xl font-black mb-4">Sincronizando Plataforma...</h2>
-            <p class="text-xl opacity-80">Cargando preguntas desde Google Sheets Pro</p>
+            <h2 class="text-4xl font-black mb-4 tracking-tighter">Sincronizando Datos...</h2>
+            <p class="text-xl opacity-70">Conectando con Google Sheets Pro</p>
         </div>
     </div>
 
     <script>
-        // Registrar el Service Worker para que sea instalable (PWA)
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
-        // ==========================================
-        // CONFIGURACIÓN DE TU GOOGLE SHEETS
-        // ==========================================
-        // 1. Abre tu Google Sheet.
-        // 2. En la URL, busca la parte larga entre '/d/' y '/edit'.
-        // 3. Pégala aquí abajo.
         const SHEET_ID = '1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4';
-        const SHEET_TITLE = 'Preguntas'; // Nombre de la pestaña en tu Sheet
-        const SHEET_RANGE = 'A2:G'; // Rango de datos (Materia, Pregunta, OpciónA-D, Correcta)
-
+        
         const EXAM_CONFIGS = {
-            UNAM: { name: "UNAM Área 1", time: 180 * 60 },
-            BUAP: { name: "EXANI-II BUAP", time: 300 * 60, ignoreInScore: ["Inglés"] },
-            UV: { name: "EXANI-II UV", time: 180 * 60, ignoreInScore: ["Inglés"] }
+            UNAM: { name: "UNAM Área 1", time: 180 * 60, theme: 'theme-unam' },
+            BUAP: { name: "EXANI-II BUAP", time: 300 * 60, theme: 'theme-buap' },
+            UV: { name: "EXANI-II UV", time: 180 * 60, theme: 'theme-uv' }
         };
 
         let state = {
             loaded: false,
-            database: { UNAM: {}, BUAP: {}, UV: {} }, // Guardará preguntas por Universidad y Versión
+            database: { UNAM: {}, BUAP: {}, UV: {} },
             view: 'home',
-            currentExamId: null, // Ej: 'UNAM'
-            currentVersion: null, // Ej: 'Examen 2024'
-            questions: [], // Las 120 preguntas elegidas al azar
+            currentExamId: null,
+            currentVersion: null,
+            questions: [],
             index: 0,
             answers: {},
             timeLeft: 0,
             timer: null
         };
 
-        // FUNCIÓN PRINCIPAL: Cargar datos desde Google Sheets
         async function loadSheetData() {
             try {
-                const url = `https://docs.google.com/spreadsheets/d/1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:I`;
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:I`;
                 const response = await fetch(url);
                 const text = await response.text();
-                const jsonStr = text.substring(47).slice(0, -2);
-                const json = JSON.parse(jsonStr);
+                const json = JSON.parse(text.substring(47).slice(0, -2));
                 
-                // Procesar las filas del Sheet
                 json.table.rows.forEach(row => {
-                    const uni = row.c[0]?.v || ''; // Universidad (A)
-                    const ver = row.c[1]?.v || ''; // Versión (B)
-                    const sub = row.c[2]?.v || ''; // Materia (C)
-                    const qst = row.c[3]?.v || ''; // Pregunta (D)
-                    
-                    // Solo si hay universidad, versión, materia y pregunta
-                    if (uni && ver && sub && qst && EXAM_CONFIGS[uni.toUpperCase()]) {
+                    const uni = row.c[0]?.v || '';
+                    const ver = row.c[1]?.v || '';
+                    if (uni && ver && EXAM_CONFIGS[uni.toUpperCase()]) {
                         const uniKey = uni.toUpperCase();
-                        if (!state.database[uniKey][ver]) { state.database[uniKey][ver] = []; }
-                        
+                        if (!state.database[uniKey][ver]) state.database[uniKey][ver] = [];
                         state.database[uniKey][ver].push({
-                            s: sub, q: qst,
-                            o: [
-                                row.c[4]?.v || '', // Opción A (E)
-                                row.c[5]?.v || '', // Opción B (F)
-                                row.c[6]?.v || '', // Opción C (G)
-                                row.c[7]?.v || ''  // Opción D (H)
-                            ].filter(opt => opt !== ''), // Quitar opciones vacías
-                            a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3 // Correcta (I)
+                            s: row.c[2]?.v || '', 
+                            q: row.c[3]?.v || '',
+                            o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v),
+                            a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3
                         });
                     }
                 });
-
                 state.loaded = true;
                 render();
-            } catch (error) {
-                console.error("Error cargando Sheet:", error);
-                document.getElementById('loading').innerHTML = `<h2 class="text-4xl font-black mb-4 text-red-300">Error de Sincronización</h2><p class="text-xl text-red-100">Verifica tu ID de Sheet y que esté publicado.</p>`;
+            } catch (e) {
+                document.getElementById('loading').innerHTML = `<h2 class="text-red-200 text-3xl font-black">Error de Conexión</h2>`;
+            }
+        }
+
+        function toggleConfig() {
+            document.getElementById('config-modal').classList.toggle('active');
+        }
+
+        function updateTimerDisplay() {
+            const timerDoc = document.getElementById('timer-display');
+            if(timerDoc) {
+                const m = Math.floor(state.timeLeft / 60);
+                const s = state.timeLeft % 60;
+                timerDoc.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                if(state.timeLeft < 300) timerDoc.classList.add('text-red-500');
             }
         }
 
         function render() {
-            if (!state.loaded) return; // Esperar a que carguen los datos
+            if (!state.loaded) return;
             const root = document.getElementById('app');
-            root.className = 'animate-fade';
+            
+            // Aplicar tema según universidad
+            document.body.className = "min-h-screen p-4 md:p-8 font-sans antialiased text-slate-800 " + 
+                (state.currentExamId ? EXAM_CONFIGS[state.currentExamId].theme : '');
 
             if (state.view === 'home') {
-                root.innerHTML = `<div class="text-center mt-12 py-16 glass-card rounded-3xl shadow-2xl px-8">
-                    <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-pink-600 to-blue-600 mb-6 tracking-tighter">Plataforma Adriel 2026</h1>
-                    <p class="text-slate-700 text-xl mb-16 max-w-2xl mx-auto font-medium">Entrena con simulacros reales, actualizados al instante desde la nube. ¡Tu éxito empieza aquí!</p>
-                    <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                root.innerHTML = `
+                <div class="text-center mt-12 py-16 glass-card rounded-[3rem] shadow-2xl px-8 animate-fade">
+                    <h1 class="text-6xl font-black text-slate-900 mb-4 tracking-tighter">Plataforma Adriel</h1>
+                    <p class="text-slate-500 text-xl mb-12 font-medium">Simuladores de Admisión 2026</p>
+                    <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                         ${Object.keys(EXAM_CONFIGS).map(id => {
-                            const versions = Object.keys(state.database[id]);
-                            const disabled = versions.length === 0;
-                            return `<button onclick="startExam('${id}')" class="group bg-white p-8 rounded-3xl shadow-xl hover:-translate-y-2 transition-all duration-300 text-left border-l-8 ${disabled ? 'border-slate-300' : 'border-violet-600 shadow-violet-200'}" ${disabled ? 'disabled' : ''}>
-                                <div class="flex justify-between items-start mb-5">
-                                    <div>
-                                        <div class="text-xs font-bold text-violet-400 mb-1 uppercase tracking-wider">${id}</div>
-                                        <div class="text-2xl font-black text-slate-800 leading-tight">${EXAM_CONFIGS[id].name}</div>
-                                    </div>
-                                    <div class="p-3.5 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg group-hover:rotate-12 transition-transform ${disabled ? 'opacity-30' : ''}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                                    </div>
+                            const hasData = Object.keys(state.database[id]).length > 0;
+                            return `
+                            <button onclick="startExam('${id}')" class="group bg-white p-8 rounded-[2rem] shadow-xl hover:-translate-y-2 transition-all border-b-8 border-slate-200 ${!hasData ? 'opacity-50 cursor-not-allowed' : 'hover:border-indigo-500'}" ${!hasData ? 'disabled' : ''}>
+                                <div class="text-left">
+                                    <span class="text-xs font-black text-indigo-500 uppercase tracking-widest">${id}</span>
+                                    <h3 class="text-2xl font-black text-slate-800 mt-1">${EXAM_CONFIGS[id].name}</h3>
+                                    <p class="text-slate-400 text-sm mt-4 font-bold">${EXAM_CONFIGS[id].time/60} minutos</p>
                                 </div>
-                                <p class="text-slate-500 text-sm font-medium">Cronómetro: ${EXAM_CONFIGS[id].time / 60} min • ${disabled ? 'Sin datos' : `${versions.length} versiones disponibles`}</p>
                             </button>`;
                         }).join('')}
                     </div>
                 </div>`;
             } else if (state.view === 'quiz') {
                 const q = state.questions[state.index];
-                const m = Math.floor(state.timeLeft / 60);
-                const s = state.timeLeft % 60;
-                root.innerHTML = `<div class="grid md:grid-cols-4 gap-8">
-                    <div class="glass-card p-6 rounded-3xl shadow-xl h-fit">
-                        <div class="text-4xl font-mono font-black mb-8 text-center tracking-tight ${state.timeLeft < 300 ? 'text-red-600' : 'text-slate-800'}">
-                            ${m}:${s < 10 ? '0' : ''}${s}
+                root.innerHTML = `
+                <div class="grid md:grid-cols-4 gap-6 animate-fade">
+                    <div class="glass-card p-6 rounded-[2rem] shadow-xl h-fit">
+                        <div id="timer-display" class="text-4xl font-mono font-black mb-8 text-center text-slate-800 tabular-nums">00:00</div>
+                        <div class="grid grid-cols-5 gap-2 mb-8">
+                            ${state.questions.map((_, i) => `
+                                <button onclick="state.index=${i};render()" class="aspect-square text-[10px] rounded-lg font-bold transition ${state.index === i ? 'active-q' : (state.answers[i] !== undefined ? 'answered' : 'bg-slate-100 text-slate-400')}">
+                                    ${i + 1}
+                                </button>
+                            `).join('')}
                         </div>
-                        <div class="grid grid-cols-5 gap-2.5 mb-8">
-                            ${state.questions.map((_, i) => `<button onclick="state.index=${i};render()" class="q-bubble aspect-square text-xs rounded-xl font-black transition ${state.index === i ? 'active-q' : (state.answers[i] !== undefined ? 'answered' : 'bg-slate-100 text-slate-500')}">
-                                ${i + 1}
-                            </button>`).join('')}
-                        </div>
-                        <button onclick="finish()" class="w-full bg-gradient-to-r from-violet-600 to-indigo-700 text-white py-4 rounded-2xl font-black shadow-lg shadow-indigo-200 hover:scale-105 transition-transform uppercase tracking-widest text-sm">
-                            Finalizar Examen
-                        </button>
+                        <button onclick="finish()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition">Finalizar</button>
                     </div>
-                    <div class="md:col-span-3 bg-white p-10 rounded-3xl shadow-xl border border-slate-100 animate-fade">
-                        <div class="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
-                            <div>
-                                <span class="px-3.5 py-1 rounded-full bg-violet-50 text-violet-700 font-bold text-xs uppercase tracking-wider">${q.s}</span>
-                                <span class="ml-3 text-xs text-slate-400 font-bold">${state.currentVersion}</span>
-                            </div>
-                            <span class="text-sm font-bold text-slate-400">Pregunta ${state.index + 1} de ${state.questions.length}</span>
+                    <div class="md:col-span-3 bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl border border-slate-50">
+                        <div class="flex justify-between items-center mb-10">
+                            <span class="px-4 py-1.5 rounded-full bg-slate-100 text-slate-600 font-black text-[10px] uppercase tracking-tighter">${q.s}</span>
+                            <span class="text-xs font-bold text-slate-300">Pregunta ${state.index + 1}/${state.questions.length}</span>
                         </div>
-                        <h2 class="text-3xl font-extrabold text-slate-900 mb-12 tracking-tight leading-snug">${q.q}</h2>
-                        <div class="space-y-5">
-                            ${q.o.map((opt, i) => `<button onclick="state.answers[state.index]=${i};render()" class="option-btn group w-full text-left p-6 rounded-2xl border-2 transition ${state.answers[state.index] === i ? 'selected' : 'border-slate-100'}">
-                                <div class="flex items-center">
-                                    <span class="font-black text-2xl mr-5 w-11 h-11 flex items-center justify-center rounded-full ${state.answers[state.index] === i ? 'bg-pink-600 text-white' : 'bg-slate-100 text-slate-500'}">
-                                        ${String.fromCharCode(65 + i)}
-                                    </span>
-                                    <span class="text-lg flex-1 font-medium">${opt}</span>
-                                </div>
-                            </button>`).join('')}
+                        <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mb-10 leading-tight">${q.q}</h2>
+                        <div class="space-y-4">
+                            ${q.o.map((opt, i) => `
+                                <button onclick="state.answers[state.index]=${i};render()" class="option-btn w-full text-left p-5 rounded-2xl border-2 border-slate-50 flex items-center ${state.answers[state.index] === i ? 'selected' : 'bg-slate-50/50'}">
+                                    <span class="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm font-black mr-4 text-slate-400">${String.fromCharCode(65+i)}</span>
+                                    <span class="font-bold text-slate-700">${opt}</span>
+                                </button>
+                            `).join('')}
                         </div>
-                        <div class="flex justify-between mt-12 pt-8 border-t border-slate-100">
-                            <button onclick="if(state.index>0)state.index--;render()" class="font-bold text-slate-500 hover:text-slate-800">Anterior</button>
-                            <button onclick="if(state.index<state.questions.length-1)state.index++;render()" class="bg-slate-900 text-white px-10 py-3 rounded-xl font-black shadow-lg shadow-slate-200 hover:-translate-y-1 transition-all">Siguiente / Saltar</button>
+                        <div class="flex justify-between mt-12">
+                            <button onclick="if(state.index>0){state.index--;render()}" class="text-slate-400 font-black text-sm hover:text-slate-600 transition">ANTERIOR</button>
+                            <button onclick="if(state.index<state.questions.length-1){state.index++;render()}" class="bg-slate-900 text-white px-8 py-3 rounded-xl font-black text-sm hover:scale-105 transition">SIGUIENTE</button>
                         </div>
                     </div>
                 </div>`;
+                updateTimerDisplay();
             } else if (state.view === 'results') {
-                let corrects = 0; state.questions.forEach((q, i) => { if(state.answers[i] === q.a) corrects++; });
-                root.innerHTML = `<div class="max-w-4xl mx-auto glass-card p-12 rounded-3xl shadow-2xl text-center">
-                    <h2 class="text-4xl font-black mb-2 text-slate-900 tracking-tighter">Simulacro Completado</h2>
-                    <p class="text-slate-600 font-medium mb-10">Resultado para ${EXAM_CONFIGS[state.currentExamId].name} (${state.currentVersion})</p>
-                    <div class="text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600 mb-10 tabular-nums">
-                        ${corrects} / ${state.questions.length}
-                    </div>
-                    <button onclick="location.reload()" class="bg-slate-900 text-white px-12 py-5 rounded-3xl font-black text-lg shadow-xl shadow-slate-300 hover:scale-105 transition-transform">Volver al Inicio Pro</button>
+                let correctas = 0;
+                state.questions.forEach((q, i) => { if(state.answers[i] === q.a) correctas++; });
+                root.innerHTML = `
+                <div class="max-w-2xl mx-auto glass-card p-12 rounded-[3rem] shadow-2xl text-center animate-fade">
+                    <h2 class="text-3xl font-black mb-2">Resultado Final</h2>
+                    <div class="text-[8rem] font-black text-slate-900 leading-none my-8">${correctas}</div>
+                    <p class="text-slate-500 font-bold mb-10 uppercase tracking-widest text-sm">Aciertos totales de ${state.questions.length}</p>
+                    <button onclick="location.reload()" class="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 transition">NUEVO INTENTO</button>
                 </div>`;
             }
         }
 
         function startExam(id) {
             const versions = Object.keys(state.database[id]);
-            if (versions.length === 0) return alert("Aún no hay datos para esta universidad.");
-            
-            // Lógica de Azar: Elegir una versión al azar
             const randomVersion = versions[Math.floor(Math.random() * versions.length)];
-            const allQuestions = state.database[id][randomVersion];
+            const pool = state.database[id][randomVersion];
             
-            // Si el examen tiene más de 120 preguntas, elegir 120 al azar
-            // (Si tiene menos, las cargará todas)
-            if (allQuestions.length > 120) {
-                state.questions = allQuestions.sort(() => 0.5 - Math.random()).slice(0, 120);
-            } else {
-                state.questions = allQuestions;
-            }
-
+            state.questions = pool.length > 120 ? pool.sort(() => 0.5 - Math.random()).slice(0, 120) : pool;
             state.currentExamId = id;
             state.currentVersion = randomVersion;
             state.timeLeft = EXAM_CONFIGS[id].time;
             state.view = 'quiz';
-            state.timer = setInterval(() => { state.timeLeft--; if(state.timeLeft<=0) finish(); render(); }, 1000);
+            state.index = 0;
+            state.answers = {};
+            
+            if(state.timer) clearInterval(state.timer);
+            state.timer = setInterval(() => { 
+                state.timeLeft--; 
+                if(state.timeLeft <= 0) finish();
+                updateTimerDisplay();
+            }, 1000);
             render();
         }
 
         function finish() { clearInterval(state.timer); state.view = 'results'; render(); }
-        
-        loadSheetData(); // Iniciar carga
-        render(); // Renderizado inicial (carga)
+        loadSheetData();
     </script>
 </body>
 </html>
