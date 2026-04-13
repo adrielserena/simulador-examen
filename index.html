@@ -174,15 +174,16 @@
             if (uni && state.database[uni]) {
                 if (!state.database[uni][ver]) state.database[uni][ver] = [];
 
-                state.database[uni][ver].push({
-                    s: cols[2] || '',
-                    q: cols[3] || '',
-                    o: [cols[4], cols[5], cols[6], cols[7]].filter(v => v),
-                    a: cols[8] === 'A' ? 0 :
-                       cols[8] === 'B' ? 1 :
-                       cols[8] === 'C' ? 2 : 3,
-                    img: cols[9] || null
-                });
+             state.database[uni][ver].push({
+    n: parseInt(cols[10]) || 0, // 👈 número de pregunta
+    s: cols[2] || '',
+    q: cols[3] || '',
+    o: [cols[4], cols[5], cols[6], cols[7]].filter(v => v),
+    a: cols[8] === 'A' ? 0 :
+       cols[8] === 'B' ? 1 :
+       cols[8] === 'C' ? 2 : 3,
+    img: cols[9] || null
+});
             }
         });
 
@@ -280,6 +281,9 @@
         function start(id) {
             const versions = Object.keys(state.database[id]);
             state.questions = state.database[id][versions[0]];
+
+// 👇 ORDENAR
+state.questions.sort((a, b) => a.n - b.n);
             state.timeLeft = 180 * 60; state.view = 'quiz'; state.index = 0; state.answers = {};
             if(state.timer) clearInterval(state.timer);
             state.timer = setInterval(() => { state.timeLeft--; if(state.timeLeft <= 0) finish(); updateTimer(); }, 1000);
