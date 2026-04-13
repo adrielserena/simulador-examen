@@ -140,6 +140,10 @@
     <main id="app" class="max-w-5xl mx-auto px-4 pt-20 pb-10"></main>
 
     <script>
+        function parseCSVLine(line) {
+    const regex = /(".*?"|[^",]+)(?=\s*,|\s*$)/g;
+    return line.match(regex)?.map(v => v.replace(/^"|"$/g, '').trim());
+}
         const SHEET_ID = '1LpWbCciDiWZs94X6if0xct34bGg-Ibrw4UjwFZn5nN4';
         let fontSize = 18;
         let state = { database: { UNAM: {}, BUAP: {}, UV: {} }, view: 'home', questions: [], index: 0, answers: {}, timeLeft: 0, timer: null };
@@ -152,27 +156,48 @@
             }, 2500);
         });
 
-        async function loadData() {
-            try {
-                const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Preguntas&range=A2:J`);
-                const txt = await res.text();
-                const json = JSON.parse(txt.substring(47).slice(0, -2));
-                json.table.rows.forEach(row => {
-                    const uni = row.c[0]?.v?.toUpperCase();
-                    const ver = row.c[1]?.v || '';
-                    if (uni && state.database[uni]) {
-                        if (!state.database[uni][ver]) state.database[uni][ver] = [];
-                        state.database[uni][ver].push({
-                            s: row.c[2]?.v || '', q: row.c[3]?.v || '',
-                            o: [row.c[4]?.v, row.c[5]?.v, row.c[6]?.v, row.c[7]?.v].filter(v => v),
-                            a: row.c[8]?.v === 'A' ? 0 : row.c[8]?.v === 'B' ? 1 : row.c[8]?.v === 'C' ? 2 : 3,
-                            img: row.c[9]?.v || null
-                        });
-                    }
+   async function loadData() {
+    try {
+        const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`);
+        const text = await res.text();
+
+        const rows = text.split('\n').slice(1); // quitar encabezado
+
+        rows.forEach(row => {
+            if (!row.trim()) return;
+
+            const cols = parseCSVLine(row);
+
+            const uni = cols[0]?.toUpperCase();
+            const ver = cols[1] || '';
+
+            if (uni && state.database[uni]) {
+                if (!state.database[uni][ver]) state.database[uni][ver] = [];
+
+                state.database[uni][ver].push({
+                    s: cols[2] || '',
+                    q: cols[3] || '',
+                    o: [cols[4], cols[5], cols[6], cols[7]].filter(v => v),
+                    a: cols[8] === 'A' ? 0 :
+                       cols[8] === 'B' ? 1 :
+                       cols[8] === 'C' ? 2 : 3,
+                    img: cols[9] || null
                 });
-                render();
-            } catch (e) { console.error(e); }
-        }
+            }
+        });
+
+        console.log("Preguntas cargadas:",
+            Object.values(state.database)
+            .flatMap(v => Object.values(v))
+            .flat().length
+        );
+
+        render();
+
+    } catch (e) {
+        console.error("Error:", e);
+    }
+}
 
         function adjustFont(n) {
             fontSize = Math.max(14, Math.min(32, fontSize + n));
